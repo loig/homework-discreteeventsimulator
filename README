@@ -1,0 +1,79 @@
+Simulateur réseau pour le cours de PEV
+Par Pierre Riteau and Houssein Wehbe, 2008
+
+INSTALLATION
+------------
+
+Taper make devrait être suffisant pour compiler le programme.
+Il est ensuite présent sous la forme d'un fichier exécutable nommé simu.
+
+USAGE
+-----
+
+Le simulateur prend plusieurs paramètres en argument.
+L'usage est: simu [-cfp] network flows seed warmup_time simu_time
+où :
+- network est un chemin vers un fichier de configuration du réseau
+- flow est un chemin vers un fichier de configuration des flux
+- seed est la graine du générateur aléatoire
+- warmup_time est le temps de warmup
+- simu_time est le temps où s'arrêtre la simulation
+(le temps pris en compte par les statistiques est donc simu_time - warmup_time)
+
+Trois options sont disponibles:
+- l'option -c permet de lancer le programme en mode BLMC
+- l'option -f permet de lancer le programme en mode BLMF
+- l'option -p permet de lancer le programme en mode PLM
+
+Il existe également une option -r qui permet de faire du debugging du programme
+en créant des événements qui vont afficher les états des routeurs dans le
+réseau. Cette option n'est pas utile pour la simulation.
+
+CALCUL DES STATISTIQUES
+-----------------------
+
+Pour calculer le backlog moyen et son intervalle de confiance, nous avons
+décidé d'échantillonner les mesures (c'est-à-dire qu'un événement de type MES
+est créé toutes les secondes et qu'il enregistre l'intégrale du backlog depuis
+la dernière mesure). Cet ensemble de mesure représente notre échantillon et sert
+ensuite à calculer l'intervalle de confiance.
+
+Nous avons choisi cette méthode plutôt que celle de l'enregistrement d'un
+échantillon lors d'un retour à 0 du backlog pour plusieurs raisons : la première
+est que dans le cas de l'instabilité il n'y a pas ou très peu de retour à 0 du
+backlog, et la seconde est que le calcul avec cette méthode de retour à 0 fait
+qu'une longue durée entre deux passages à 0 sera aussi importante dans la
+moyenne finale qu'une courte durée entre deux passages.
+Notre méthode permet de tenir compte des longues durées entre deux passages à 0
+puisque les échantillons sont pris à intervalle fixe (1 seconde).
+Cependant il faut prendre garde à ce que la période d'échantillonnage soit
+valide par rapport aux événements du système.
+
+FICHIERS D'EXEMPLES
+-------------------
+
+Le dossier networks/ contient plusieurs réseaux qui peuvent être utilisés
+par le simulateur, par exemple networks/network.dat contient le premier
+réseau simple, networks/double.dat contient le réseau avec deux routeurs,
+networks/3a.dat et networks/3b.dat contiennent le 3e réseau étudié avec
+deux tables de routage différentes, networks/ligne.dat contient le 4e
+réseau.
+
+Le dossier flows/ contient les paramètres de l'étude (flux, taille moyenne de
+paquet, tailles de buffer et vitesses de routeurs).
+Ils sont nommés de la même façon que les fichiers du dossier networks/
+
+Par exemple, pour faire une simulation sur le premier réseau simple, on utilise
+la commande :
+./simu -p networks/simple.dat flows/simple.dat 42 1000 5000
+où 42 est le seed, 1000 est le temps de warmup et 5000 est le temps de
+simulation total.
+
+ARCHITECTURE DU PROGRAMME
+-------------------------
+
+events.c : liste doublement chainée contenant les événements
+main.c : programme principal
+parser.c : module de parsing des fichiers de configuration
+regress.c : module permettant le debugging du simulateur
+util.c : fonctions utilitaires

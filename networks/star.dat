@@ -1,0 +1,28 @@
+# number of terminals
+5
+
+# number of routers
+5
+
+# vector indicating to which router each terminal is connected
+# format:
+# router of t0
+# router of t1
+# ...
+0
+1
+2
+3
+4
+
+# vector of routing tables, one for each router
+# format:
+# RT of v0: pathtot0 pathtot1 ... pathtotm
+# RT of v1: pathtot0 pathtot1 ... pathtotm
+# ...
+# -1 means directly connected
+-1 3 2 3 2
+3 -1 4 3 4
+0 4 -1 0 4
+0 1 0 -1 1
+2 1 2 1 -1

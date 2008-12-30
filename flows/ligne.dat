@@ -1,0 +1,33 @@
+# Matrix of flows
+# in packets per second
+# from ti to tj
+# format:
+# flow_from_t0_to_t0 flow_from_t0_to_t1 ... flow_from_t0_to_tm-1
+# ...
+# flow_from_tm-1_to_t0 flow_from_tm-1_to_t1 ... flow_from_tm-1_to_tm-1
+0 1 1 1 1 1 1 1
+1 0 1 1 1 1 1 1
+1 1 0 1 1 1 1 1
+1 1 1 0 1 1 1 1
+1 1 1 1 0 1 1 1
+1 1 1 1 1 0 1 1
+1 1 1 1 1 1 0 1
+1 1 1 1 1 1 1 0
+
+# Buffer size for each router
+# -1 means infinite
+6
+6
+6
+6
+
+# Mean size of packets in bits
+64
+
+# Bandwidth of each router in bits per second
+# format:
+# bw_r0 ... bw_rn-1
+700
+700
+700
+700

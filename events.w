@@ -1,29 +1,28 @@
-
 @* Events.
 
 [Global view]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 @** Data-structures.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 @ We start with some macro definition, hence the usual
 
-@(simulator.h@>=
-#ifndef SIMULATOR_H
-#define SIMULATOR_H
-
-#include <stdio.h>
-#include <stdlib.h>
-
+@(simulator_events.h@>=
+#ifndef SIMULATOR_EVENTS_H
+#define SIMULATOR_EVENTS_H
 
 @ First, we define some types of events. The first one signal the
 end of the simulation:
 
-@(simulator.h@>+=
+@(simulator_events.h@>+=
 #define END_SIM		0
 
 @ And things we don't know yet
 
-@(simulator.h@>+=
+@(simulator_events.h@>+=
 #define ARR		1
 #define DEP		2
 #define TRAP		3
@@ -35,7 +34,7 @@ list. Therefore, an event, conveying a |pckt|, is timestamped by a
 and |next|. Moreover, all events are assigned a |type|, as defined
 above.
 
-@(simulator.h@>+=
+@(simulator_events.h@>+=
 typedef struct _event 
 {
   int type;
@@ -51,7 +50,7 @@ typedef struct _event
   measurements, we also add a |departureTime| field that indicates the
   time at which the packet was sent.
 
-@(simulator.h@>+=
+@(simulator_events.h@>+=
 typedef struct _packet {
 	int	src;
 	int	dst;
@@ -65,7 +64,7 @@ typedef struct _packet {
 macro. This macro creates and allocates the memory for an empty event,
 of class |c|, forecasted for time |t|.
 
-@(simulator.h@>+=
+@(simulator_events.h@>+=
 #define CREATE_EV(ev, c, t)	{ 					\ 
 					ev = xmalloc(sizeof(*ev)) ;	\
 					ev->type = c ;			\
@@ -94,10 +93,19 @@ void *xmalloc(size_t size)
 
 @ And we close this include by
 
-@(simulator.h@>+=
-     #endif
+@(simulator_events.h@>+=
+     #endif /* |SIMULATOR_EVENTS_H| */
 
+
+
+
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
 @** Event manipulation.
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
+
+
+
+
 
 As mentioned above, an event queue will be represented by a
 doubly-linked list. Therefore, we have to provide the entry of the
@@ -107,7 +115,11 @@ list, |first|, and its exit, |last|.
 static Event *first;
 static Event *last;
 
+
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
 @*3 Event queue initialization.
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
+
 
 Let us start with the event queue initialization. First, using the
 macro defined above, we allocate a terminal event element, belonging
@@ -124,7 +136,11 @@ evlist_init(double t)
 	first = last = ev;
 }
 
+
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
 @*3 Pop the first element.
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
+
 
 Then, an usual task will be to pick the first element of the event
 queue, so as to process it. Hence, we define the following function
@@ -165,7 +181,10 @@ first element is empty, then the list invariants trivially hold.
   *pckt = x->pckt;
 
 
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
 @*3 Event insertion.
+@q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
+
 
 @ Finally, the last operation we need is the insertion.
 

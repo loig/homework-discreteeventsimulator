@@ -36,13 +36,19 @@ pointed by |flows|.
 network, the so-called |gateway|, as well its |traffic|, ie. the
 number of packets per second it can send on the network.
 
-@(simulator_network.h@>=
+@(simulator_network.h@>+=
 @q { @>
      typedef struct _terminal {
        int      gateway;
        int      traffic;
      } Terminal;
 @q } @>
+
+@ And instead of IP addresses, we use |TerminalID| to represent
+network addresses:
+
+@(simulator_network.h@>+=
+typedef int TerminalId;
 
   @ A router is a more complex beast, as it features:
 \item {$\bullet$} a routing table |routingTable|
@@ -52,7 +58,7 @@ number of packets per second it can send on the network.
 \item {$\bullet$} its backlog, in bits with |backlogBits| 
                   and in packets with |backlogPackets|
 
-@(simulator_network.h@>=
+@(simulator_network.h@>+=
 @q { @>
      struct _router {
        int *routingTable;
@@ -64,7 +70,21 @@ number of packets per second it can send on the network.
 
 @q } @>
 
-@ And we are done with network data-structures
+@ As for terminals, we use |RouterID| to represent the network
+addresses of routers:
 
-@(simulator_network.h@>=
+@(simulator_network.h@>+=
+typedef int RouterID;
+
+@ We can close our header then
+
+@(simulator_network.h@>+=
 #endif /* |SIMULATOR_NETWORK_H| */
+
+
+@ And we are done with network data-structures. Hence, we can declare
+a static |network| data-structure:
+
+@c
+  static Network network;
+

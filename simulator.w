@@ -10,5 +10,7 @@ simulator, written for the 2007-2008 session of the PEV lecture.
 
 @i network.w
 
+@i scheduler.w
+
 @* Index. Here is a list that shows where the identifiers of this program are
 defined and used.

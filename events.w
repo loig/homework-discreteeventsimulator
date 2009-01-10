@@ -14,6 +14,8 @@
 #ifndef SIMULATOR_EVENTS_H
 #define SIMULATOR_EVENTS_H
 
+#include "simulator_network.h"
+
 @ First, we define some types of events. The first one signal the
 end of the simulation:
 
@@ -29,7 +31,7 @@ end of the simulation:
 #define MES		4
 
 @ Our simulator schedule packets in the form of doubly-linked
-list. Therefore, an event, conveying a |pckt|, is timestamped by a
+list. Therefore, an event, conveying a |packet|, is timestamped by a
 |time| field. The doubly-linked list structure is defined with |prev|
 and |next|. Moreover, all events are assigned a |type|, as defined
 above.
@@ -39,7 +41,7 @@ typedef struct _event
 {
   int type;
   double time;
-  struct _packet *pckt;
+  struct _packet *packet;
   struct _event *prev;
   struct _event *next;
 } Event;
@@ -52,12 +54,10 @@ typedef struct _event
 
 @(simulator_events.h@>+=
 typedef struct _packet {
-	int	src;
-	int	dst;
-	int	position;
-	int	length;
-        @;
-	double	departureTime;
+	TerminalId src;
+	TerminalId dst;
+	int	   position;
+	int	   length;
 } Packet;
 
 @ To simplify the creation of an event queue, we define the following
@@ -69,7 +69,7 @@ of class |c|, forecasted for time |t|.
 					ev = xmalloc(sizeof(*ev)) ;	\
 					ev->type = c ;			\
 					ev->time = t ;			\
-					ev->pckt = NULL;                \
+					ev->packet = NULL;                \
 					ev->prev = NULL;		\
 					ev->next = NULL; 		\
 				}
@@ -149,10 +149,10 @@ event.
 
 @c
 void
-evlist_first(int *c, double *t, Packet **pckt)
+evlist_first(int *type, double *time, Packet **packet)
 {
-  Event *x;
-  x = first;
+  Event *event;
+  event = first;
 
   first = first->next;
 
@@ -160,7 +160,7 @@ evlist_first(int *c, double *t, Packet **pckt)
 
   @<Copy the event@>;
 
-  free(x);
+  free(event);
 }
 
 @ When we pick the first event, we have to null-ify its |prev| pointer
@@ -176,9 +176,9 @@ first element is empty, then the list invariants trivially hold.
 @ To retrieve the content of this first element, we simply 
 
 @<Copy the event@>=
-  *t = x->time;
-  *c = x->type;
-  *pckt = x->pckt;
+  *time = event->time;
+  *type = event->type;
+  *packet = event->packet;
 
 
 @q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>

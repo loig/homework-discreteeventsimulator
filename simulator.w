@@ -43,9 +43,9 @@ typedef struct _event
     int Class; 
     double Time;
     packet *Pckt;
-    event *Prev;
-    event *Next;
-} event;
+    Event *Prev;
+    Event *Next;
+} Event;
 
 @ To simplify the creation of an event queue, we define the following
 macro. This macro creates and allocates the memory for an empty event,
@@ -88,8 +88,8 @@ doubly-linked list. Therefore, we have to provide the entry of the
 list, |first|, and its exit, |last|.
 
 @c
-static event *first;
-static event *last;
+static Event *first;
+static Event *last;
 
 @*3 Event queue initialization.
 
@@ -102,7 +102,7 @@ we initialize |first| and |last| as pointing to this single event.
 void
 evlist_init(double t)
 {
-	event *ev;
+	Event *ev;
 
 	CREATE_EV(ev, END_SIM, t);
 	first = last = ev;
@@ -119,7 +119,7 @@ event.
 void
 evlist_first(int *c, double *t, struct packet **pckt)
 {
-  event *x;
+  Event *x;
   x = first;
 
   first = first->Next;
@@ -154,18 +154,16 @@ first element is empty, then the list invariants trivially hold.
 @ Finally, the last operation we need is the insertion.
 
 @c
-void
-evlist_insert(struct event *event)
-{
+void evlist_insert (Event *event) 
+{ 
+	Event *currentEvent,
+	      *nextEvent, 
+	      *previousEvent;
+	double time; @;
 
-	struct event *currentEvent,
-	             *nextEvent, 
-	             *previousEvent;
-	double time;
-
-	timeEvent = event->Time;
-	timeFirstEvent = first->Time;
-	timeLastEvent = last->Time;
+	double timeEvent = event->Time;
+	double timeFirstEvent = first->Time;
+	double timeLastEvent = last->Time;
 
 	if (timeEvent < timeFirstEvent) {
 	  @<Event goes first@>;
@@ -175,82 +173,93 @@ evlist_insert(struct event *event)
 	if (timeEvent > timeLastEvent) {
 	  @<Event goes last@>;
 	  return;
-	}
+	} 
 
-	/* Heuristic: insert forward if closer to head, backward if not */
-	if (timeEvent - timeFirstEvent < timeLastEvent - timeEvent) {
-	  <@Insert forward@>;
-	} else {
-	  <@Insert backward@>;
-	}
+	if (timeEvent - timeFirstEvent < timeLastEvent - timeEvent) { @;
+          // Heuristics: insert forward if closer to head
+	  @<Insert forward@>;
+	} @+ else { 
+	  // Heuristics: insert backward if not
+	  @<Insert backward@>;
+	} 
 }
 
-@ 
+@ When the |event| goes first, it has to next-point to the previous
+|first| and the previous |first| has to previous-point to it. And we
+signal who is the |first|.
 
 @<Event goes first@>=
-  {
+@q { @>
     event->Next = first;
     first->Prev = event;
     first = event;
-  }
+@q } @>
 
-@ qsdqsd
+@ The same goes when the event is the last one.
 
 @<Event goes last@>=
-  event->Prev = last;
-  last = event;
+@q { @>
+    event->Prev = last;
+    last->Next = event;
+    last = event;
+@q } @>
 
-@ qsdqdsq
+@ The forward insertion consists in the trivial list traversal to find
+a place to insert, or reaching the end of the list.
 
 @<Insert forward@>=
-  currentEvent = first;
-  nextEvent = currentEvent->Next;
+@q { @>
+     currentEvent = first;
+     nextEvent = currentEvent->Next; @;
 
-  while (nextEvent != NULL) {
-    if (timeEvent < nextEvent->Time) {
-      /* Event goes after currentEvent, before nextEvent */
-      currentEvent->next = event;
-      event->Prev = currentEvent;
-      event->Next = nextEvent;
-      nextEvent->prev = event;
-      return;
-    }
-
-    currentEvent = nextEvent;
-    nextEvent = nextEvent->Next;
-  }
+     while (nextEvent != NULL) { 
+       if (timeEvent < nextEvent->Time) { 
+	 /* Event goes after currentEvent, before nextEvent */
+	 currentEvent->next = event;
+	 event->Prev = currentEvent;
+	 event->Next = nextEvent;
+	 nextEvent->prev = event;
+	 return;
+       }
+       
+       currentEvent = nextEvent;
+       nextEvent = nextEvent->Next;
+     }
 		
-  /* Event is at the end of the queue */
-  currentEvent->next = event;
-  event->Prev = currentEvent;
-  event->Next = NULL;
+     /* Event is at the end of the queue */
+     currentEvent->next = event;
+     event->Prev = currentEvent;
+     event->Next = NULL;
+@q } @>
 
-@ qsdqdqs
+@ Conversely, the backward insertion traverses the list with the
+|prev| pointers, until it reaches a good place or the head of the
+queue.
 
-<@Insert backward@>=
-  {
-    currentEvent = last;
-    previousEvent = currentEvent->Prev;
+@<Insert backward@>=
+@q { @>
+     currentEvent = last;
+     previousEvent = currentEvent->Prev;
 
-    while (previousEvent != NULL) {
-      if (timeEvent > previousEvent->time) {
-	/* Event foes after previousEvent, before currentEvent */
-	previousEvent->Next = event;
-	event->Prev = previousEvent;
-	event->Next = currentEvent;
-	currentEvent->Prev = event;
-	return;
-      }
+     while (previousEvent != NULL) { 
+       if (timeEvent > previousEvent->time) {
+	 /* Event foes after previousEvent, before currentEvent */
+	 previousEvent->Next = event;
+	 event->Prev = previousEvent;
+	 event->Next = currentEvent;
+	 currentEvent->Prev = event;
+	 return;
+       }
 
-      currentEvent = previousEvent;
-      previousEvent = previousEvent->Prev;
-    }
+       currentEvent = previousEvent;
+       previousEvent = previousEvent->Prev;
+     }
 
-    /* Event is at the head of the queue */
-    currentEvent->Prev = event;
-    event->Next = currentEvent;
-    event->Prev = NULL;
-  }
+     /* Event is at the head of the queue */
+     currentEvent->Prev = event;
+     event->Next = currentEvent;
+     event->Prev = NULL;
+@q  } @>
 
 @* Index. Here is a list that shows where the identifiers of this program are
 defined and used.

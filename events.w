@@ -1,10 +1,13 @@
 @* Events.
 
-[Global view]
-
+The event module implements the famous Event Queue, at the heart of
+any Discrete Event Simulator. The implementation is sketched as
+follow: first, we define the data-structure as well as some macros to
+build them. Then, we define three operations on Event Queues:
+initialization, insertion, and picking the first event.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-@** Data-structures.
+@*2 Data-structures.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -16,19 +19,20 @@
 
 #include "simulator_network.h"
 
-@ First, we define some types of events. The first one signal the
-end of the simulation:
+@ First, we define some types of events:
+\item {$\bullet$} |END_SIM| signals the end of the simulation
+\item {$\bullet$} |ARRIVAL| signals an arrival at a router
+\item {$\bullet$} |DEPARTURE| signals a departure from a router
 
 @(simulator_events.h@>+=
-#define END_SIM		0
+typedef enum _eventType { END_SIM,
+			  ARRIVAL,
+			  DEPARTURE } EventType;
 
-@ And things we don't know yet
+@q useless @>
+@q #define TRAP		3 @>
+@q #define MES		4 @>
 
-@(simulator_events.h@>+=
-#define ARR		1
-#define DEP		2
-#define TRAP		3
-#define MES		4
 
 @ Our simulator schedule packets in the form of doubly-linked
 list. Therefore, an event, conveying a |packet|, is timestamped by a
@@ -39,7 +43,7 @@ above.
 @(simulator_events.h@>+=
 typedef struct _event 
 {
-  int type;
+  EventType type;
   double time;
   struct _packet *packet;
   struct _event *prev;
@@ -48,9 +52,7 @@ typedef struct _event
 
 
 @ Where a packet is defined by its source and destination, as well as
-  its position in the network and its length, in bits. For the
-  measurements, we also add a |departureTime| field that indicates the
-  time at which the packet was sent.
+  its position in the network and its length, in bits.
 
 @(simulator_events.h@>+=
 typedef struct _packet {
@@ -62,16 +64,16 @@ typedef struct _packet {
 
 @ To simplify the creation of an event queue, we define the following
 macro. This macro creates and allocates the memory for an empty event,
-of class |c|, forecasted for time |t|.
+of type |c|, forecasted for time |t|.
 
 @(simulator_events.h@>+=
-#define CREATE_EV(ev, c, t)	{ 					\ 
-					ev = xmalloc(sizeof(*ev)) ;	\
-					ev->type = c ;			\
-					ev->time = t ;			\
-					ev->packet = NULL;                \
-					ev->prev = NULL;		\
-					ev->next = NULL; 		\
+#define CREATE_EV(event, c, t) {							\ 
+					event = (Event *) xmalloc(sizeof(Event)) ;	\
+					event->type = c ;			 	\
+					event->time = t ;				\
+					event->packet = NULL;				\
+					event->prev = NULL;				\
+					event->next = NULL;				\
 				}
 
 @ The |xmalloc| function is simply an extension of |malloc| that catches
@@ -84,14 +86,20 @@ void *xmalloc(size_t size)
 {
 	void *ptr;
 	if ((ptr = malloc(size)) == NULL) {
-		err(1, "simulator: exhausted memory");
+		err(1, "Simulator: memory exhausted");
 	} @+ else {
 		return ptr;
 	}
 }
 
+@ And, as we will use it globally, we advertise its signature in the
+header
 
-@ And we close this include by
+@(simulator_events.h@>+=
+  void *xmalloc(size_t size);
+
+
+@ And we close this Include by
 
 @(simulator_events.h@>+=
      #endif /* |SIMULATOR_EVENTS_H| */
@@ -100,7 +108,7 @@ void *xmalloc(size_t size)
 
 
 @q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
-@** Event manipulation.
+@*2 Event manipulation.
 @q%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%@>
 
 
@@ -128,12 +136,12 @@ we initialize |first| and |last| as pointing to this single event.
 
 @c
 void
-evlist_init(double t)
+evlist_init(double endSimulationTime)
 {
-	Event *ev;
+	Event *event;
 
-	CREATE_EV(ev, END_SIM, t);
-	first = last = ev;
+	CREATE_EV(event, END_SIM, endSimulationTime);
+	first = last = event;
 }
 
 
@@ -164,7 +172,7 @@ evlist_first(int *type, double *time, Packet **packet)
 }
 
 @ When we pick the first event, we have to null-ify its |prev| pointer
-so as to maintain the (backward) list structure. Obviously, if this
+in order to maintain the (backward) list structure. Obviously, if this
 first element is empty, then the list invariants trivially hold.
 
 @<Maintain the backward pointer@>=
@@ -173,7 +181,8 @@ first element is empty, then the list invariants trivially hold.
   }
 
 
-@ To retrieve the content of this first element, we simply 
+@ To retrieve the content of this first element, we simply have to
+copy each of the event informations
 
 @<Copy the event@>=
   *time = event->time;
@@ -194,7 +203,6 @@ void evlist_insert (Event *event)
 	Event *currentEvent,
 	      *nextEvent, 
 	      *previousEvent;
-	double time; @;
 
 	double timeEvent = event->time;
 	double timeFirstEvent = first->time;
@@ -213,7 +221,7 @@ void evlist_insert (Event *event)
 	if (timeEvent - timeFirstEvent < timeLastEvent - timeEvent) { @;
           // Heuristics: insert forward if closer to head
 	  @<Insert forward@>;
-	} @+ else { 
+	} @+ else { @/@,
 	  // Heuristics: insert backward if not
 	  @<Insert backward@>;
 	} 
@@ -249,6 +257,7 @@ a place to insert, or reaching the end of the list.
 
      while (nextEvent != NULL) { 
        if (timeEvent < nextEvent->time) { 
+         @/@,
 	 /* Event goes after currentEvent, before nextEvent */
 	 currentEvent->next = event;
 	 event->prev = currentEvent;
@@ -261,10 +270,11 @@ a place to insert, or reaching the end of the list.
        nextEvent = nextEvent->next;
      }
 		
-     /* Event is at the end of the queue */
      currentEvent->next = event;
      event->prev = currentEvent;
      event->next = NULL;
+     @/@,
+     /* Event is at the end of the queue */
 @q } @>
 
 @ Conversely, the backward insertion traverses the list with the
@@ -278,7 +288,8 @@ queue.
 
      while (previousEvent != NULL) { 
        if (timeEvent > previousEvent->time) {
-	 /* Event foes after previousEvent, before currentEvent */
+         @/@,
+	 /* Event goes after previousEvent, before currentEvent */
 	 previousEvent->next = event;
 	 event->prev = previousEvent;
 	 event->next = currentEvent;
@@ -290,8 +301,10 @@ queue.
        previousEvent = previousEvent->prev;
      }
 
-     /* Event is at the head of the queue */
      currentEvent->prev = event;
      event->next = currentEvent;
      event->prev = NULL;
+     @/@,
+     /* Event is at the head of the queue */
+	  
 @q  } @>

@@ -1,12 +1,10 @@
 @* Network Topology.
 
-[Global view]
+In this module, we mostly describe memory structure only. These
+structures will hold the representation of the simulated network,
+along with its terminals and routers.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-@** Data-structures.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-@ First, the usual
+@ So, first, the usual
 
 @(simulator_network.h@>=
 #ifndef SIMULATOR_NETWORK_H
@@ -44,7 +42,7 @@ number of packets per second it can send on the network.
      } Terminal;
 @q } @>
 
-@ And instead of IP addresses, we use |TerminalID| to represent
+@ And instead of IP addresses, we use |TerminalId| to represent
 network addresses:
 
 @(simulator_network.h@>+=
@@ -57,24 +55,28 @@ typedef int TerminalId;
 \item {$\bullet$} its |bandwidth|, in bits per second
 \item {$\bullet$} its backlog, in bits with |backlogBits| 
                   and in packets with |backlogPackets|
+\item {$\bullet$} the previous time the simulator has updated its backlog
+\item {$\bullet$} the date at which the current sent packet will be released
 
 @(simulator_network.h@>+=
 @q { @>
-     struct _router {
+   typedef struct _router {
        int *routingTable;
        int bufferSize;
        int bandwidth;
        double backlogBits;
        int backlogPackets;
+       double previousTime;
+       double dateFree;
 } Router;
 
 @q } @>
 
-@ As for terminals, we use |RouterID| to represent the network
+@ As for terminals, we use |RouterId| to represent the network
 addresses of routers:
 
 @(simulator_network.h@>+=
-typedef int RouterID;
+typedef int RouterId;
 
 @ We can close our header then
 

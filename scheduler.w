@@ -1,14 +1,13 @@
 @* The Packet Scheduler.
 
-We generate network traffic on the end-hosts, ie. terminals. 
+In this module, we define a function that generates network traffic on
+an end-host, ie. a terminal.
 
 @ Hence, the scheduling of a packet for a given terminal |terminalId|
 proceeds as follow:
 
 @c
-  void schedulePacket(TerminalId terminalId, @|
-       		      double (*randSendDate)(int), @|
-		      int (*randPacketSize)(int))
+  void schedulePacket(TerminalId terminalId)
 {
   
   int maxFlow = network.terminals[terminalId].traffic;
@@ -19,13 +18,13 @@ proceeds as follow:
     return; 
   /* If it is not able to send anything, we just quit the scheduling */
 
-  double sendDate = currentTime + (*randSendDate)(maxFlow);
+  double sendDate = currentTime + (*randSendDate)((double) maxFlow);
   /* We randomly get a sending time */
 
   if (sendDate > endSimulationTime)
     return;
-  /* If the packet will be out after the simulation is finished, just
-     drop the scheduling.
+  /* If the packet is sent while the simulation is finished, just
+     drop its scheduling
   */
 
   @<Allocate an event and a packet@>;
@@ -34,7 +33,7 @@ proceeds as follow:
   event->packet->position = network.terminals[terminalId].gateway;
   /* We put the packet in the terminal gateway's pipe */
 
-  event->packet->length = (*randPacketSize)(averagePacketSize);
+  event->packet->length = (int) (*randPacketSize)(averagePacketSize);
   /* Tie the coin to get its length */
 
   evlist_insert(event);
@@ -43,13 +42,13 @@ proceeds as follow:
 }
 
 @ To allocate the event, we simply use the macro defined in the
-previous section, setting its type to |ARR| and its send time to
-|sendDate|. We also allocate a packet and already set its source as
-being the current terminal.
+previous section, setting its type to |ARRIVAL| ({\it arrival to a
+router}) and its send time to |sendDate|. We also allocate a packet
+and already set its source as being the current terminal.
 
 @<Allocate an event and a packet@>=
   Event *event;
-  CREATE_EV(event, ARR, sendDate);
+  CREATE_EV(event, ARRIVAL, sendDate);
   event->packet = xmalloc(sizeof(Packet));
   event->packet->src = terminalId;
 

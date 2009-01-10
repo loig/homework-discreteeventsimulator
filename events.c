@@ -23,11 +23,13 @@ evlist_insert(struct event *ev)
 	time = ev->time;
 	if (time < first->time) {
 		ev->next = first;
+		first->prev = ev;
 		first = ev;
 		return;
 	}
 	if (time > last->time) {
 		ev->prev = last;
+		last->next = ev;
 		last = ev;
 		return;
 	}

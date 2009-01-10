@@ -24,12 +24,12 @@ void	evlist_init(double);
 void	evlist_insert(struct event *);
 
 
-#define CREATE_EV(ev, c, t)	do {					\
+#define CREATE_EV(ev, c, t)	{					\
 					ev = xmalloc(sizeof(*ev));	\
 					ev->class = c;			\
 					ev->time = t;			\
 					ev->prev = NULL;		\
 					ev->next = NULL;		\
-				} while (0)
+				}
 
 #endif	/* EVENTS_H */
